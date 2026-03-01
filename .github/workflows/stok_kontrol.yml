@@ -20,15 +20,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: 🌐 Chrome kur
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
+          cache: "pip"
+          cache-dependency-path: stok_takip/requirements.txt
 
       - name: 📦 Bağımlılıkları yükle
-        run: |
-          pip install -r stok_takip/requirements.txt
+        run: pip install -r stok_takip/requirements.txt
 
       - name: 🔍 Stok kontrol et
         env:

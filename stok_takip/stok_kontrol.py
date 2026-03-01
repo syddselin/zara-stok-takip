@@ -1,28 +1,34 @@
 """
-Zara Stok Kontrol Modülü (Selenium Tabanlı)
-============================================
-Zara ürün sayfalarını gerçek tarayıcı ile açarak
-belirli bir bedenin stok durumunu kontrol eder.
+Zara Stok Kontrol Modülü (API Tabanlı)
+=======================================
+Zara'nın dahili ürün API'sini kullanarak beden bazlı stok kontrolü yapar.
 
-Zara güçlü bot koruması (Akamai) kullandığı için
-normal HTTP istekleri engellenir. Bu modül Selenium
-ile gerçek Chrome tarayıcısı kullanarak bu korumayı aşar.
+Selenium veya Chrome gerektirmez — sadece HTTP istekleri kullanır.
+Bu sayede GitHub Actions'da çok daha hızlı çalışır (~2 sn vs ~30 sn).
+
+API endpoint:
+  https://www.zara.com/tr/tr/products-details?productIds={id}&ajax=true
+
+Ürün URL'sindeki "v1" parametresi doğrudan API'nin beklediği ID'dir.
+  Örnek: ...p07521020.html?v1=505034866  →  productId = 505034866
 """
 
+import re
 import time
 import logging
 from typing import Optional
+from urllib.parse import urlparse, parse_qs
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import requests
 
-from config import HEADLESS, SAYFA_BEKLEME, TEKRAR_DENEME
+from config import TEKRAR_DENEME
 
 logger = logging.getLogger("stok_takip")
 
+
+# ================================================================
+# VERİ MODELİ
+# ================================================================
 
 class StokDurumu:
     """Bir ürünün stok durumunu temsil eder."""
@@ -46,62 +52,38 @@ class StokDurumu:
         return f"[{self.beden}] {durum} | Fiyat: {self.fiyat} | {self.mesaj}"
 
 
+# ================================================================
+# STOK KONTROL SINIFI
+# ================================================================
+
 class ZaraStokKontrol:
     """
-    Selenium ile Zara ürün sayfasını açıp beden bazlı stok kontrolü yapar.
-
-    Zara'nın beden seçici yapısı:
-      - li.size-selector-sizes__size → her beden bir <li>
-      - .size-selector-sizes-size__label → beden adı (XS, S, M, ...)
-      - button[data-qa-action="size-in-stock"] → stokta
-      - button[data-qa-action="size-out-of-stock"] → stok dışı
-      - CSS class: --disabled → stok dışı bedenlere eklenir
+    Zara'nın dahili API'si ile beden bazlı stok kontrolü yapar.
+    Chrome/Selenium gerektirmez.
     """
 
-    def __init__(self):
-        self.driver: Optional[webdriver.Chrome] = None
+    API_URL = "https://www.zara.com/tr/tr/products-details"
 
-    def _tarayici_baslat(self):
-        """Chrome tarayıcısını bot korumasını aşacak şekilde başlatır."""
-        if self.driver:
-            return
-
-        opts = Options()
-
-        if HEADLESS:
-            opts.add_argument("--headless=new")
-
-        opts.add_argument("--no-sandbox")
-        opts.add_argument("--disable-dev-shm-usage")
-        opts.add_argument("--disable-blink-features=AutomationControlled")
-        opts.add_argument("--window-size=1920,1080")
-        opts.add_argument(
-            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/131.0.0.0 Safari/537.36"
-        )
-        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-        opts.add_experimental_option("useAutomationExtension", False)
+        ),
+        "Accept": "application/json",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://www.zara.com/tr/tr/",
+    }
 
-        self.driver = webdriver.Chrome(options=opts)
-
-        # navigator.webdriver özelliğini gizle
-        self.driver.execute_cdp_cmd(
-            "Page.addScriptToEvaluateOnNewDocument",
-            {"source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"},
-        )
-
-        logger.info("🌐 Chrome tarayıcı başlatıldı")
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update(self.HEADERS)
+        self._cookie_alindi = False
 
     def kapat(self):
-        """Tarayıcıyı kapatır."""
-        if self.driver:
-            try:
-                self.driver.quit()
-            except Exception:
-                pass
-            self.driver = None
-            logger.info("🌐 Tarayıcı kapatıldı")
+        """HTTP oturumunu kapatır."""
+        self.session.close()
+        logger.info("🌐 HTTP oturumu kapatıldı")
 
     def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
         """
@@ -118,13 +100,13 @@ class ZaraStokKontrol:
 
         for deneme in range(TEKRAR_DENEME):
             try:
-                return self._sayfa_kontrol(url, hedef_beden)
+                return self._api_kontrol(url, hedef_beden)
             except Exception as e:
                 logger.warning(
                     f"Kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}"
                 )
-                # Tarayıcıyı yeniden başlat
-                self.kapat()
+                # Cookie'ler geçersiz olmuş olabilir, yeniden al
+                self._cookie_alindi = False
                 if deneme < TEKRAR_DENEME - 1:
                     time.sleep(3)
 
@@ -134,115 +116,130 @@ class ZaraStokKontrol:
             mesaj="Tüm denemeler başarısız oldu",
         )
 
-    def _sayfa_kontrol(self, url: str, hedef_beden: str) -> StokDurumu:
-        """Sayfayı açıp beden bazlı stok kontrolü yapar."""
-        self._tarayici_baslat()
+    # ================================================================
+    # API İSTEĞİ
+    # ================================================================
 
-        logger.debug(f"Sayfa açılıyor: {url}")
-        self.driver.get(url)
+    def _cookie_al(self):
+        """Zara ana sayfasını ziyaret ederek gerekli cookie'leri alır."""
+        if self._cookie_alindi:
+            return
 
-        # Sayfanın yüklenmesini bekle (bot korumasını geçmek için)
-        time.sleep(SAYFA_BEKLEME)
-
-        # Cookie banner'ını kapat (varsa)
-        self._cookie_kapat()
-
-        # "EKLE" butonuna tıklayarak beden seçiciyi aç
-        # Zara'da bedenler ancak bu butona tıklandığında görünür olur
         try:
-            ekle_btn = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "button[data-qa-action='add-to-cart']")
-                )
-            )
-            self.driver.execute_script("arguments[0].click();", ekle_btn)
-            time.sleep(2)
-        except Exception:
-            return StokDurumu(
-                stokta_var=False,
-                beden=hedef_beden,
-                mesaj="EKLE butonu bulunamadı (sayfa yüklenemedi veya ürün kaldırıldı)",
-            )
+            self.session.get("https://www.zara.com/tr/tr/", timeout=15)
+            self._cookie_alindi = True
+            logger.debug("🍪 Cookie'ler alındı")
+        except Exception as e:
+            logger.debug(f"Cookie alma hatası (devam ediliyor): {e}")
 
-        # Beden listesinin yüklenmesini bekle
-        try:
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "li[class*='size']")
-                )
-            )
-        except Exception:
-            return StokDurumu(
-                stokta_var=False,
-                beden=hedef_beden,
-                mesaj="Beden listesi yüklenemedi (sayfa açılamadı veya ürün kaldırıldı)",
-            )
+    def _product_id_cek(self, url: str) -> str:
+        """
+        URL'den Zara ürün API ID'sini çıkarır.
+        Ürün URL'sindeki v1 parametresi doğrudan API ID'sidir.
 
-        # Fiyat bilgisini al
-        fiyat = self._fiyat_al()
+        Örnek: ...p07521020.html?v1=505034866  →  505034866
+        """
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
 
-        # Tüm bedenlerin stok durumunu tara
+        # v1 parametresi = renk bazlı ürün ID
+        if "v1" in params:
+            return params["v1"][0]
+
+        # v1 yoksa, URL'den ana ürün ID'sini çıkar (daha az güvenilir)
+        match = re.search(r"-p(\d+)\.html", url)
+        if match:
+            return match.group(1)
+
+        raise ValueError(f"URL'den ürün ID'si çıkarılamadı: {url}")
+
+    def _api_kontrol(self, url: str, hedef_beden: str) -> StokDurumu:
+        """Zara API'sinden ürün verisini çekip stok durumunu döndürür."""
+        self._cookie_al()
+
+        product_id = self._product_id_cek(url)
+        logger.debug(f"API sorgusu: productId={product_id}")
+
+        resp = self.session.get(
+            self.API_URL,
+            params={"productIds": product_id, "ajax": "true"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+
+        data = resp.json()
+
+        if not data:
+            raise ValueError(f"API boş yanıt döndü (productId: {product_id})")
+
+        product = data[0]
+        return self._veriyi_isle(product, product_id, hedef_beden)
+
+    # ================================================================
+    # VERİ İŞLEME
+    # ================================================================
+
+    def _veriyi_isle(
+        self, product: dict, product_id: str, hedef_beden: str
+    ) -> StokDurumu:
+        """API yanıtından beden bazlı stok durumunu çıkarır."""
         tum_bedenler = {}
         hedef_stokta = False
         hedef_bulundu = False
+        fiyat = None
 
-        beden_elemanlari = self.driver.find_elements(
-            By.CSS_SELECTOR, "li[class*='size']"
-        )
+        detail = product.get("detail", {})
+        colors = detail.get("colors", [])
 
-        logger.info(f"  📏 {len(beden_elemanlari)} beden bulundu")
+        # Doğru rengi bul (product_id ile eşleşen)
+        hedef_renk = None
+        for color in colors:
+            if str(color.get("productId")) == str(product_id):
+                hedef_renk = color
+                break
 
-        for li in beden_elemanlari:
-            try:
-                # Beden adını al
-                try:
-                    label = li.find_element(
-                        By.CSS_SELECTOR, "[class*='label']"
-                    )
-                except Exception:
-                    label = li
-                beden_adi = (
-                    label.text.strip()
-                    or label.get_attribute("textContent").strip()
-                )
+        # Eşleşen renk bulunamazsa ilk rengi al
+        if not hedef_renk and colors:
+            hedef_renk = colors[0]
 
-                if not beden_adi:
-                    continue
+        if not hedef_renk:
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                mesaj="Ürün renk/varyant bilgisi bulunamadı",
+            )
 
-                # Stok durumunu belirle
-                btn = li.find_element(By.CSS_SELECTOR, "button")
-                qa_action = btn.get_attribute("data-qa-action") or ""
-                siniflar = li.get_attribute("class") or ""
+        # Bedenleri tara
+        sizes = hedef_renk.get("sizes", [])
+        logger.info(f"  📏 {len(sizes)} beden bulundu")
 
-                stokta = (
-                    qa_action == "size-in-stock"
-                    and "--disabled" not in siniflar
-                    and "--unavailable" not in siniflar
-                )
+        for size in sizes:
+            beden = (size.get("name") or "").strip().upper()
+            stokta = size.get("availability") == "in_stock"
 
-                tum_bedenler[beden_adi] = stokta
+            if beden:
+                tum_bedenler[beden] = stokta
 
-                # Hedef beden kontrolü
-                if beden_adi.upper() == hedef_beden:
-                    hedef_bulundu = True
-                    hedef_stokta = stokta
+            # Fiyat (kuruş cinsinden gelir: 149000 → 1.490,00 TRY)
+            if not fiyat and size.get("price"):
+                fiyat_kurus = size["price"]
+                fiyat = f"{fiyat_kurus / 100:,.2f} TRY".replace(",", ".")
 
-            except Exception as e:
-                logger.debug(f"Beden elementi okunamadı: {e}")
-                continue
+            if beden == hedef_beden:
+                hedef_bulundu = True
+                hedef_stokta = stokta
 
         # Sonuç oluştur
         if not hedef_bulundu:
+            mevcut = ", ".join(tum_bedenler.keys()) or "Beden bilgisi alınamadı"
             return StokDurumu(
                 stokta_var=False,
                 beden=hedef_beden,
                 fiyat=fiyat,
                 tum_bedenler=tum_bedenler,
-                mesaj=f"'{hedef_beden}' bedeni bu üründe bulunamadı. "
-                      f"Mevcut bedenler: {', '.join(tum_bedenler.keys())}",
+                mesaj=f"'{hedef_beden}' bedeni bu üründe bulunamadı. Mevcut: {mevcut}",
             )
 
-        # Diğer bedenlerin durumunu özetle
         stokta_bedenler = [b for b, s in tum_bedenler.items() if s]
         diger_bilgi = (
             f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}"
@@ -262,32 +259,3 @@ class ZaraStokKontrol:
             tum_bedenler=tum_bedenler,
             mesaj=mesaj,
         )
-
-    def _cookie_kapat(self):
-        """Zara cookie banner'ını kapatır."""
-        try:
-            btn = self.driver.find_element(
-                By.CSS_SELECTOR, "#onetrust-accept-btn-handler"
-            )
-            if btn.is_displayed():
-                btn.click()
-                time.sleep(0.5)
-        except Exception:
-            pass
-
-    def _fiyat_al(self) -> Optional[str]:
-        """Sayfadan fiyat bilgisini alır."""
-        selectors = [
-            ".money-amount__main",
-            "[class*='price'] [class*='current']",
-            ".product-detail-info__price .money-amount",
-        ]
-        for sel in selectors:
-            try:
-                el = self.driver.find_element(By.CSS_SELECTOR, sel)
-                fiyat = el.text.strip()
-                if fiyat:
-                    return fiyat
-            except Exception:
-                continue
-        return None

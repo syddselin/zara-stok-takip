@@ -60,15 +60,8 @@ TELEGRAM_AYARLARI = {
 }
 
 # ============================================================
-# TARAYICI AYARLARI (Selenium)
+# İSTEK AYARLARI
 # ============================================================
-
-# Tarayıcıyı görünür mü yoksa arka planda mı çalıştır?
-# True = arka planda (headless), False = görünür pencere
-HEADLESS = True
-
-# Sayfa yüklenme bekleme süresi (saniye)
-SAYFA_BEKLEME = 10
 
 # Hata durumunda tekrar deneme sayısı
 TEKRAR_DENEME = 3

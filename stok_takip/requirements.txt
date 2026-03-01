@@ -1,3 +1,2 @@
 # Zara Stok Takip Sistemi - Gerekli Paketler
-selenium>=4.15.0
 requests>=2.31.0
