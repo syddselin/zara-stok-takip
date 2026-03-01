@@ -28,7 +28,7 @@ jobs:
 
       - name: 📦 Bağımlılıkları yükle
         run: |
-          pip install -r requirements.txt
+          pip install -r stok_takip/requirements.txt
 
       - name: 🔍 Stok kontrol et
         env:
