@@ -1,0 +1,40 @@
+name: 🛒 Zara Stok Kontrol
+
+on:
+  # Her 15 dakikada bir otomatik çalışır
+  schedule:
+    - cron: "*/15 * * * *"
+
+  # Manuel tetikleme (GitHub'dan "Run workflow" butonuyla)
+  workflow_dispatch:
+
+jobs:
+  stok-kontrol:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Kodu çek
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 🌐 Chrome kur
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: 📦 Bağımlılıkları yükle
+        run: |
+          pip install -r requirements.txt
+
+      - name: 🔍 Stok kontrol et
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_ACTIONS: "true"
+        working-directory: stok_takip
+        run: |
+          python main.py --tek-seferlik
