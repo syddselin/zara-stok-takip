@@ -68,3 +68,6 @@ TEKRAR_DENEME = 3
 
 # Log dosyası
 LOG_DOSYASI = "stok_takip.log"
+
+# Durum dosyası (çalıştırmalar arası stok durumunu saklar)
+DURUM_DOSYASI = "stok_durum.json"

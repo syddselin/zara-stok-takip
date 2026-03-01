@@ -26,7 +26,13 @@ jobs:
       - name: 📦 Bağımlılıkları yükle
         run: pip install -r stok_takip/requirements.txt
 
-      - name: 🔍 Stok kontrol et
+      - name: � Önceki stok durumunu yükle
+        uses: actions/cache@v4
+        with:
+          path: stok_takip/stok_durum.json
+          key: stok-durum
+
+      - name: �🔍 Stok kontrol et
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

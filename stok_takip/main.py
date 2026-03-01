@@ -13,16 +13,18 @@ Kullanım:
 
 import sys
 import time
+import json
 import signal
 import logging
 import logging.handlers
 import argparse
+from pathlib import Path
 from datetime import datetime
 
 # Proje dizinini path'e ekle
 sys.path.insert(0, ".")
 
-from config import URUNLER, KONTROL_ARALIGI, LOG_DOSYASI
+from config import URUNLER, KONTROL_ARALIGI, LOG_DOSYASI, DURUM_DOSYASI
 from stok_kontrol import ZaraStokKontrol
 from bildirim import BildirimGonderici
 
@@ -83,6 +85,35 @@ class StokTakipMotoru:
         self.onceki_durumlar: dict[str, bool] = {}
         self.calisiyor = True
 
+    # ─── Durum dosyası (çalıştırmalar arası hafıza) ───────────
+
+    def _durum_yukle(self):
+        """Önceki stok durumlarını dosyadan yükler (varsa)."""
+        yol = Path(DURUM_DOSYASI)
+        if yol.exists():
+            try:
+                self.onceki_durumlar = json.loads(yol.read_text("utf-8"))
+                self.logger.info(
+                    f"💾 Önceki durum yüklendi ({len(self.onceki_durumlar)} kayıt)"
+                )
+                return True
+            except Exception as e:
+                self.logger.warning(f"⚠️  Durum dosyası okunamadı: {e}")
+        return False
+
+    def _durum_kaydet(self):
+        """Mevcut stok durumlarını dosyaya kaydeder."""
+        try:
+            Path(DURUM_DOSYASI).write_text(
+                json.dumps(self.onceki_durumlar, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            self.logger.info("💾 Durum dosyası güncellendi")
+        except Exception as e:
+            self.logger.warning(f"⚠️  Durum dosyası kaydedilemedi: {e}")
+
+    # ─── Ana döngü ────────────────────────────────────────────
+
     def baslat(self, tek_seferlik: bool = False):
         """
         Stok takip döngüsünü başlatır.
@@ -105,15 +136,25 @@ class StokTakipMotoru:
         self.logger.info("─" * 55)
 
         try:
-            # İlk kontrol: mevcut durumları kaydet
-            self.logger.info("🔍 İlk kontrol yapılıyor (mevcut durumlar kaydediliyor)...")
-            self._tum_urunleri_kontrol_et(ilk_kontrol=True)
-
             if tek_seferlik:
+                # Önceki durumu dosyadan yükle (GitHub Actions hafızası)
+                onceki_var = self._durum_yukle()
+                ilk_kontrol = not onceki_var
+
+                if ilk_kontrol:
+                    self.logger.info("🔍 İlk çalıştırma — durumlar kaydediliyor...")
+                else:
+                    self.logger.info("🔍 Stok kontrol ediliyor (önceki durumla karşılaştırılacak)...")
+
+                self._tum_urunleri_kontrol_et(ilk_kontrol=ilk_kontrol)
+                self._durum_kaydet()
                 self.logger.info("✅ Tek seferlik kontrol tamamlandı.")
                 return
 
-            # Sürekli takip döngüsü
+            # Sürekli takip — her zamanki gibi
+            self.logger.info("🔍 İlk kontrol yapılıyor (mevcut durumlar kaydediliyor)...")
+            self._tum_urunleri_kontrol_et(ilk_kontrol=True)
+
             self.logger.info("─" * 55)
             self.logger.info("🔄 Sürekli takip başladı. Durdurmak için Ctrl+C")
             self.logger.info("─" * 55)
