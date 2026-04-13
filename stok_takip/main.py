@@ -25,7 +25,7 @@ from datetime import datetime
 sys.path.insert(0, ".")
 
 from config import URUNLER, KONTROL_ARALIGI, LOG_DOSYASI, DURUM_DOSYASI
-from stok_kontrol import ZaraStokKontrol
+from stok_kontrol import StokKontrol
 from bildirim import BildirimGonderici
 
 
@@ -77,7 +77,7 @@ class StokTakipMotoru:
     """
 
     def __init__(self):
-        self.kontrol = ZaraStokKontrol()
+        self.kontrol = StokKontrol()
         self.bildirim = BildirimGonderici()
         self.logger = logging.getLogger("stok_takip")
 

@@ -73,6 +73,21 @@ stok_takip/
 3. Bot'a bir mesaj gönderin, ardından `https://api.telegram.org/bot<TOKEN>/getUpdates` adresinden `chat_id`'yi bulun
 4. `TELEGRAM_BILDIRIM = True` yapın
 
+### Lokal `.env` ile hızlı kurulum
+
+`stok_takip/.env` dosyası oluşturup aşağıdaki değişkenleri ekleyin:
+
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+```
+
+Test mesajı göndermek için:
+
+```bash
+python telegram_test.py
+```
+
 ## 📧 Gmail E-posta Kurulumu
 
 1. Google Hesabınızda "Uygulama Şifreleri" oluşturun

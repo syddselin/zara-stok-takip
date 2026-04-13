@@ -2,26 +2,45 @@
 # ZARA STOK TAKİP SİSTEMİ - YAPILANDIRMA DOSYASI
 # ============================================================
 import os
+from pathlib import Path
 
-# Takip edilecek Zara ürünleri
+
+def _env_dosyasi_yukle():
+    """.env dosyasındaki değişkenleri (varsa) ortama yükler."""
+    adaylar = [
+        Path(__file__).resolve().parent / ".env",
+        Path(__file__).resolve().parent.parent / ".env",
+    ]
+
+    for yol in adaylar:
+        if not yol.exists():
+            continue
+
+        for satir in yol.read_text(encoding="utf-8").splitlines():
+            satir = satir.strip()
+            if not satir or satir.startswith("#") or "=" not in satir:
+                continue
+
+            anahtar, deger = satir.split("=", 1)
+            anahtar = anahtar.strip()
+            deger = deger.strip().strip('"').strip("'")
+
+            # Ortamda varsa ezme
+            os.environ.setdefault(anahtar, deger)
+
+        break
+
+
+_env_dosyasi_yukle()
+
+# Takip edilecek ürünler
 # Her ürün için URL, isim ve hedef beden belirtin
 URUNLER = [
     {
-        "isim": "Fiyonklu Dokulu Top",
-        "url": "https://www.zara.com/tr/tr/fiyonklu-dokulu-top-p07521020.html?v1=505034866",
-        "hedef_beden": "XS",
-    },
-    {
-        "isim": "Fiyonklu Dokulu Top",
-        "url": "https://www.zara.com/tr/tr/fiyonklu-dokulu-top-p07521020.html?v1=505034866",
+        "isim": "Düğmeli ve Bağcıklı 100% Keten Kimono",
+        "url": "https://www.massimodutti.com/tr/dugmeli-ve-bagcıklı-100-keten-kimono-l06708939",
         "hedef_beden": "S",
     },
-    # Daha fazla ürün ekleyebilirsiniz:
-    # {
-    #     "isim": "Başka Ürün",
-    #     "url": "https://www.zara.com/tr/tr/urun-p12345678.html?v1=...",
-    #     "hedef_beden": "M",
-    # },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
