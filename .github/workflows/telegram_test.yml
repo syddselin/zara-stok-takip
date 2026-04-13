@@ -1,0 +1,27 @@
+name: 📱 Telegram Test Mesajı
+
+on:
+  workflow_dispatch:
+
+jobs:
+  telegram-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📤 Test mesajı gönder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID eksik."
+            exit 1
+          fi
+
+          MSG="✅ GitHub Actions test bildirimi: stok takip Telegram entegrasyonu çalışıyor."
+
+          RESP=$(curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${TELEGRAM_CHAT_ID}\",\"text\":\"${MSG}\"}")
+
+          echo "$RESP"
+          echo "$RESP" | grep -q '"ok":true'
