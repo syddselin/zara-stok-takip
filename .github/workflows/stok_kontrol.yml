@@ -1,9 +1,9 @@
 name: 🛒 Zara Stok Kontrol
 
 on:
-  # Her 5 dakikada bir otomatik çalışır
-  schedule:
-    - cron: "*/5 * * * *"
+  # Her 30 dakikada bir otomatik çalışır
+ #   schedule:
+ #     - cron: "*/30 * * * *"
 
   # Manuel tetikleme (GitHub'dan "Run workflow" butonuyla)
   workflow_dispatch:
