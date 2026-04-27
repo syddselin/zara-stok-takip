@@ -24,7 +24,13 @@ from datetime import datetime
 # Proje dizinini path'e ekle
 sys.path.insert(0, ".")
 
-from config import URUNLER, KONTROL_ARALIGI, LOG_DOSYASI, DURUM_DOSYASI
+from config import (
+    URUNLER,
+    KONTROL_ARALIGI,
+    LOG_DOSYASI,
+    DURUM_DOSYASI,
+    TAKIP_BITIS_TARIHI,
+)
 from stok_kontrol import StokKontrol
 from bildirim import BildirimGonderici
 
@@ -84,6 +90,9 @@ class StokTakipMotoru:
         # Her ürün+beden kombinasyonunun önceki stok durumunu sakla
         self.onceki_durumlar: dict[str, bool] = {}
         self.calisiyor = True
+        self.takip_bitis_tarihi = datetime.strptime(
+            TAKIP_BITIS_TARIHI, "%Y-%m-%d %H:%M:%S"
+        )
 
     # ─── Durum dosyası (çalıştırmalar arası hafıza) ───────────
 
@@ -131,9 +140,16 @@ class StokTakipMotoru:
 
         self.logger.info(f"📋 {len(URUNLER)} ürün takip ediliyor")
         self.logger.info(f"⏱️  Kontrol aralığı: {KONTROL_ARALIGI} saniye")
+        self.logger.info(
+            f"🗓️  Otomatik durma tarihi: {self.takip_bitis_tarihi.strftime('%d.%m.%Y %H:%M:%S')}"
+        )
         for urun in URUNLER:
             self.logger.info(f"  👗 {urun['isim']} → Beden: {urun['hedef_beden']}")
         self.logger.info("─" * 55)
+
+        if self._takip_suresi_bitti():
+            self.logger.info("⏹️  Takip süresi dolduğu için kontrol başlatılmadı.")
+            return
 
         try:
             if tek_seferlik:
@@ -162,6 +178,12 @@ class StokTakipMotoru:
             while self.calisiyor:
                 try:
                     time.sleep(KONTROL_ARALIGI)
+                    if self._takip_suresi_bitti():
+                        self.logger.info(
+                            "⏹️  Takip süresi dolduğu için sistem otomatik durduruldu."
+                        )
+                        self.calisiyor = False
+                        break
                     self._tum_urunleri_kontrol_et(ilk_kontrol=False)
                 except KeyboardInterrupt:
                     break
@@ -237,6 +259,10 @@ class StokTakipMotoru:
 ╚══════════════════════════════════════════════════════════════╝
         """
         print(banner)
+
+    def _takip_suresi_bitti(self) -> bool:
+        """Yapılandırılan bitiş tarihine göre takip süresinin dolup dolmadığını döndürür."""
+        return datetime.now() > self.takip_bitis_tarihi
 
 
 # ================================================================

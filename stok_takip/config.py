@@ -35,18 +35,41 @@ _env_dosyasi_yukle()
 
 # Takip edilecek ürünler
 # Her ürün için URL, isim ve hedef beden belirtin
+# Massimo Dutti ürünleri (geçici olarak pasif):
+# {
+#     "isim": "Yüksek Bel Geniş Paça Jean",
+#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
+#     "hedef_beden": "XS",
+# },
+# {
+#     "isim": "Yüksek Bel Geniş Paça Jean",
+#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
+#     "hedef_beden": "S",
+# },
 URUNLER = [
     {
-        "isim": "Düğmeli ve Bağcıklı 100% Keten Kimono",
-        "url": "https://www.massimodutti.com/tr/dugmeli-ve-bagcıklı-100-keten-kimono-l06708939",
+        "isim": "Patchwork Mini Bucket Bag With Rigid Handles",
+        "url": "https://www.zara.com/tr/en/patchwork-mini-bucket-bag-with-rigid-handles-p16615610.html?v1=508015207",
+        "hedef_beden": "STANDART",
+    },
+    {
+        "isim": "Flared Trench Midi Dress",
+        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
         "hedef_beden": "S",
+    },
+    {
+        "isim": "Flared Trench Midi Dress",
+        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
+        "hedef_beden": "XS",
     },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
-# Çok sık kontrol Zara tarafından engellenmenize neden olabilir
-# Minimum 60 saniye önerilir
-KONTROL_ARALIGI = 90  # 90 saniyede bir kontrol et
+# Token/limit dostu kullanım için 5 dakikada bir kontrol
+KONTROL_ARALIGI = 5 * 60
+
+# Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
+TAKIP_BITIS_TARIHI = "2026-05-20 23:59:59"
 
 # ============================================================
 # BİLDİRİM AYARLARI
