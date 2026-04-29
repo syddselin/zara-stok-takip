@@ -85,35 +85,140 @@ class ZaraStokKontrol:
         self.session.close()
         logger.info("🌐 HTTP oturumu kapatıldı")
 
-    def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
+    def _cookie_al(self):
+        """Zara ana sayfasını ziyaret ederek gerekli cookie'leri alır."""
+        if self._cookie_alindi:
+            return
+
+        try:
+            self.session.get("https://www.zara.com/tr/tr/", timeout=15)
+            self._cookie_alindi = True
+            logger.debug("🍪 Cookie'ler alındı")
+        except Exception as e:
+            logger.debug(f"Cookie alma hatası (devam ediliyor): {e}")
+
+    def _product_id_cek(self, url: str) -> str:
         """
-        Zara ürün sayfasındaki belirtilen bedenin stok durumunu kontrol eder.
+        URL'den Zara ürün API ID'sini çıkarır.
+        Ürün URL'sindeki v1 parametresi doğrudan API ID'sidir.
 
-        Args:
-            url: Zara ürün sayfasının URL'si
-            hedef_beden: Kontrol edilecek beden (ör: "XS", "S", "M", "L")
-
-        Returns:
-            StokDurumu nesnesi
+        Örnek: ...p07521020.html?v1=505034866  →  505034866
         """
-        hedef_beden = hedef_beden.strip().upper()
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
 
-        for deneme in range(TEKRAR_DENEME):
-            try:
-                return self._api_kontrol(url, hedef_beden)
-            except Exception as e:
-                logger.warning(
-                    f"Kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}"
-                )
-                # Cookie'ler geçersiz olmuş olabilir, yeniden al
-                self._cookie_alindi = False
-                if deneme < TEKRAR_DENEME - 1:
-                    time.sleep(3)
+        # v1 parametresi = renk bazlı ürün ID
+        if "v1" in params:
+            return params["v1"][0]
+
+        # v1 yoksa, URL'den ana ürün ID'sini çıkar (daha az güvenilir)
+        match = re.search(r"-p(\d+)\.html", url)
+        if match:
+            return match.group(1)
+
+        raise ValueError(f"URL'den ürün ID'si çıkarılamadı: {url}")
+
+    def _api_kontrol(self, url: str, hedef_beden: str) -> StokDurumu:
+        """Zara API'sinden ürün verisini çekip stok durumunu döndürür."""
+        self._cookie_al()
+
+        product_id = self._product_id_cek(url)
+        logger.debug(f"API sorgusu: productId={product_id}")
+
+        resp = self.session.get(
+            self.API_URL,
+            params={"productIds": product_id, "ajax": "true"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+
+        data = resp.json()
+
+        if not data:
+            raise ValueError(f"API boş yanıt döndü (productId: {product_id})")
+
+        product = data[0]
+        return self._veriyi_isle(product, product_id, hedef_beden)
+
+    def _veriyi_isle(
+        self, product: dict, product_id: str, hedef_beden: str
+    ) -> StokDurumu:
+        """API yanıtından beden bazlı stok durumunu çıkarır."""
+        tum_bedenler = {}
+        hedef_stokta = False
+        hedef_bulundu = False
+        fiyat = None
+
+        detail = product.get("detail", {})
+        colors = detail.get("colors", [])
+
+        # Doğru rengi bul (product_id ile eşleşen)
+        hedef_renk = None
+        for color in colors:
+            if str(color.get("productId")) == str(product_id):
+                hedef_renk = color
+                break
+
+        # Eşleşen renk bulunamazsa ilk rengi al
+        if not hedef_renk and colors:
+            hedef_renk = colors[0]
+
+        if not hedef_renk:
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                mesaj="Ürün renk/varyant bilgisi bulunamadı",
+            )
+
+        # Bedenleri tara
+        sizes = hedef_renk.get("sizes", [])
+        logger.info(f"  📏 {len(sizes)} beden bulundu")
+
+        for size in sizes:
+            beden = (size.get("name") or "").strip().upper()
+            stokta = size.get("availability") == "in_stock"
+
+            if beden:
+                tum_bedenler[beden] = stokta
+
+            # Fiyat (kuruş cinsinden gelir: 149000 → 1.490,00 TRY)
+            if not fiyat and size.get("price"):
+                fiyat_kurus = size["price"]
+                fiyat = f"{fiyat_kurus / 100:,.2f} TRY".replace(",", ".")
+
+            if beden == hedef_beden:
+                hedef_bulundu = True
+                hedef_stokta = stokta
+
+        # Sonuç oluştur
+        if not hedef_bulundu:
+            mevcut = ", ".join(tum_bedenler.keys()) or "Beden bilgisi alınamadı"
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                fiyat=fiyat,
+                tum_bedenler=tum_bedenler,
+                mesaj=f"'{hedef_beden}' bedeni bu üründe bulunamadı. Mevcut: {mevcut}",
+            )
+
+        stokta_bedenler = [b for b, s in tum_bedenler.items() if s]
+        diger_bilgi = (
+            f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}"
+            if stokta_bedenler
+            else "Hiçbir beden stokta değil"
+        )
+
+        if hedef_stokta:
+            mesaj = f"{hedef_beden} bedeni STOKTA! {diger_bilgi}"
+        else:
+            mesaj = f"{hedef_beden} bedeni stok dışı. {diger_bilgi}"
 
         return StokDurumu(
-            stokta_var=False,
+            stokta_var=hedef_stokta,
             beden=hedef_beden,
-            mesaj="Tüm denemeler başarısız oldu",
+            fiyat=fiyat,
+            tum_bedenler=tum_bedenler,
+            mesaj=mesaj,
         )
 
 
