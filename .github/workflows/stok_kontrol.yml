@@ -6,7 +6,7 @@ on:
       - cron: "*/5 * * * *"
 
   # Manuel tetikleme (GitHub'dan "Run workflow" butonuyla)
-  #workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   stok-kontrol:
