@@ -85,6 +85,47 @@ class ZaraStokKontrol:
         self.session.close()
         logger.info("🌐 HTTP oturumu kapatıldı")
 
+    def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
+        """
+        Zara ürün sayfasındaki belirtilen bedenin stok durumunu kontrol eder.
+
+        Args:
+            url: Zara ürün sayfasının URL'si
+            hedef_beden: Kontrol edilecek beden (ör: "XS", "S", "M", "L")
+
+        Returns:
+            StokDurumu nesnesi
+        """
+        hedef_beden = hedef_beden.strip().upper()
+
+        for deneme in range(TEKRAR_DENEME):
+            try:
+                return self._api_kontrol(url, hedef_beden)
+            except Exception as e:
+                logger.warning(
+                    f"Kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}"
+                )
+                # Cookie'ler geçersiz olmuş olabilir, yeniden al
+                self._cookie_alindi = False
+                if deneme < TEKRAR_DENEME - 1:
+                    time.sleep(3)
+
+        return StokDurumu(
+            stokta_var=False,
+            beden=hedef_beden,
+            mesaj="Tüm denemeler başarısız oldu",
+        )
+
+    def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu: 
+        hedef_beden = hedef_beden.strip().upper() 
+        for deneme in range(TEKRAR_DENEME): 
+            try: 
+                return self._api_kontrol(url, hedef_beden) 
+            except Exception as e: 
+                logger.warning(f"Zara kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}") 
+                if deneme < TEKRAR_DENEME - 1: 
+                    time.sleep(BEKLEME_SURESI) 
+        raise Exception("Maksimum deneme sayısına ulaşıldı") 
     def _cookie_al(self):
         """Zara ana sayfasını ziyaret ederek gerekli cookie'leri alır."""
         if self._cookie_alindi:
@@ -458,6 +499,16 @@ class StokKontrol:
     # API İSTEĞİ
     # ================================================================
 
+    def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu: 
+        hedef_beden = hedef_beden.strip().upper() 
+        for deneme in range(TEKRAR_DENEME): 
+            try: 
+                return self._api_kontrol(url, hedef_beden) 
+            except Exception as e: 
+                logger.warning(f"Zara kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}") 
+                if deneme < TEKRAR_DENEME - 1: 
+                    time.sleep(BEKLEME_SURESI) 
+        raise Exception("Maksimum deneme sayısına ulaşıldı") 
     def _cookie_al(self):
         """Zara ana sayfasını ziyaret ederek gerekli cookie'leri alır."""
         if self._cookie_alindi:
