@@ -1,11 +1,8 @@
 name: 🛒 Zara Stok Kontrol
 
 on:
-  # Her 30 dakikada bir otomatik çalışır
-    schedule:
-      - cron: "*/5 * * * *"
-
-  # Manuel tetikleme (GitHub'dan "Run workflow" butonuyla)
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -26,13 +23,13 @@ jobs:
       - name: 📦 Bağımlılıkları yükle
         run: pip install -r stok_takip/requirements.txt
 
-      - name: � Önceki stok durumunu yükle
+      - name: 💾 Önceki stok durumunu yükle
         uses: actions/cache@v4
         with:
           path: stok_takip/stok_durum.json
           key: stok-durum
 
-      - name: �🔍 Stok kontrol et
+      - name: 🔍 Stok kontrol et
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -40,4 +37,3 @@ jobs:
         working-directory: stok_takip
         run: |
           python main.py --tek-seferlik
- 
