@@ -40,3 +40,4 @@ jobs:
         working-directory: stok_takip
         run: |
           python main.py --tek-seferlik
+ 
