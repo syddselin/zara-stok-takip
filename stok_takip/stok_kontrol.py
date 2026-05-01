@@ -41,16 +41,41 @@ class StokDurumu:
         fiyat: Optional[str] = None,
         tum_bedenler: Optional[dict] = None,
         mesaj: str = "",
+        basarili: bool = True,
     ):
         self.stokta_var = stokta_var
         self.beden = beden
         self.fiyat = fiyat
         self.tum_bedenler = tum_bedenler or {}
         self.mesaj = mesaj
+        self.basarili = basarili
 
     def __repr__(self):
+        if not self.basarili:
+            return f"[{self.beden}] KONTROL BAŞARISIZ | {self.mesaj}"
         durum = "STOKTA ✅" if self.stokta_var else "STOK DIŞI ❌"
         return f"[{self.beden}] {durum} | Fiyat: {self.fiyat} | {self.mesaj}"
+
+
+def _dns_cozumleme_hatasi(hata: Exception) -> bool:
+    mesaj = str(hata)
+    return any(
+        parca in mesaj
+        for parca in (
+            "NameResolutionError",
+            "Temporary failure in name resolution",
+            "gaierror",
+        )
+    )
+
+
+def _hata_mesaji_olustur(hata: Exception) -> str:
+    if _dns_cozumleme_hatasi(hata):
+        return (
+            "DNS çözümleme hatası — bu ortam dış internet erişimini engelliyor olabilir. "
+            "Gerçek stok verisi için GitHub Actions üzerinde çalıştırın."
+        )
+    return f"Tüm denemeler başarısız oldu: {hata}"
 
 
 # ================================================================
@@ -167,15 +192,23 @@ class ZaraStokKontrol:
 
     def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
         hedef_beden = hedef_beden.strip().upper()
+        son_hata: Optional[Exception] = None
         for deneme in range(TEKRAR_DENEME):
             try:
                 return self._api_kontrol(url, hedef_beden)
             except Exception as e:
+                son_hata = e
                 logger.warning(f"Kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}")
                 self._cookie_alindi = False
                 if deneme < TEKRAR_DENEME - 1:
                     time.sleep(3)
-        return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Tüm denemeler başarısız oldu")
+        mesaj = _hata_mesaji_olustur(son_hata) if son_hata else "Tüm denemeler başarısız oldu"
+        return StokDurumu(
+            stokta_var=False,
+            beden=hedef_beden,
+            mesaj=mesaj,
+            basarili=False,
+        )
 
 
 # ================================================================
@@ -218,14 +251,22 @@ class MassimoDuttiStokKontrol:
 
     def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
         hedef_beden = hedef_beden.strip().upper()
+        son_hata: Optional[Exception] = None
         for deneme in range(TEKRAR_DENEME):
             try:
                 return self._api_kontrol(url, hedef_beden)
             except Exception as e:
+                son_hata = e
                 logger.warning(f"Massimo Dutti kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}")
                 if deneme < TEKRAR_DENEME - 1:
                     time.sleep(3)
-        return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Tüm denemeler başarısız oldu")
+        mesaj = _hata_mesaji_olustur(son_hata) if son_hata else "Tüm denemeler başarısız oldu"
+        return StokDurumu(
+            stokta_var=False,
+            beden=hedef_beden,
+            mesaj=mesaj,
+            basarili=False,
+        )
 
     def _product_id_cek(self, url: str) -> str:
         parsed = urlparse(url)

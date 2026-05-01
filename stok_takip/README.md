@@ -47,6 +47,11 @@ python main.py
 python main.py --tek-seferlik
 ```
 
+> **Not:** Bazı sandbox/CI ortamlarında dış internet erişimi kapalıdır ve Zara alan adına
+> erişim `NameResolutionError` ile başarısız olabilir. Gerçek stok verisi için
+> `.github/workflows/stok_kontrol.yml` iş akışı GitHub Actions üzerinde çalıştırılmalıdır
+> (5 dakikada bir otomatik tetiklenir, isterseniz `workflow_dispatch` ile manuel başlatabilirsiniz).
+
 ## 📁 Proje Yapısı
 
 ```

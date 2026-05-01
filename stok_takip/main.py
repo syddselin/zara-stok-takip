@@ -205,7 +205,13 @@ class StokTakipMotoru:
 
             try:
                 durum = self.kontrol.kontrol_et(url, hedef_beden)
-                onceki = self.onceki_durumlar.get(anahtar, False)
+                onceki = self.onceki_durumlar.get(anahtar)
+
+                if not durum.basarili:
+                    self.logger.warning(
+                        f"  ⚠️  {isim} [{hedef_beden}]: {durum.mesaj}"
+                    )
+                    continue
 
                 # Durum göstergeleri
                 if durum.stokta_var:
@@ -231,7 +237,7 @@ class StokTakipMotoru:
                 )
 
                 # STOK DEĞİŞİKLİĞİ TESPİTİ
-                if not ilk_kontrol and not onceki and durum.stokta_var:
+                if not ilk_kontrol and onceki is False and durum.stokta_var:
                     self.logger.info(
                         f"  🎉🎉🎉 {isim} [{hedef_beden}] STOĞA GİRDİ! "
                         f"Bildirim gönderiliyor..."
@@ -295,5 +301,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
