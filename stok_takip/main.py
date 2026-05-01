@@ -206,6 +206,7 @@ class StokTakipMotoru:
             try:
                 durum = self.kontrol.kontrol_et(url, hedef_beden)
                 onceki = self.onceki_durumlar.get(anahtar)
+                onceki_bilinmiyor = onceki is None
 
                 if not durum.basarili:
                     self.logger.warning(
@@ -244,6 +245,10 @@ class StokTakipMotoru:
                     )
                     self.bildirim.bildirim_gonder(
                         f"{isim} - {hedef_beden}", url, durum.fiyat
+                    )
+                elif not ilk_kontrol and onceki_bilinmiyor:
+                    self.logger.info(
+                        f"  ℹ️  {isim} [{hedef_beden}] için ilk kontrol sonucu kaydedildi (bildirim yok)."
                     )
 
                 # Durumu güncelle
@@ -301,4 +306,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
