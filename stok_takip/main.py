@@ -154,22 +154,16 @@ class StokTakipMotoru:
         try:
             if tek_seferlik:
                 # Önceki durumu dosyadan yükle (GitHub Actions hafızası)
-                onceki_var = self._durum_yukle()
-                ilk_kontrol = not onceki_var
-
-                if ilk_kontrol:
-                    self.logger.info("🔍 İlk çalıştırma — durumlar kaydediliyor...")
-                else:
-                    self.logger.info("🔍 Stok kontrol ediliyor (önceki durumla karşılaştırılacak)...")
-
-                self._tum_urunleri_kontrol_et(ilk_kontrol=ilk_kontrol)
+                self._durum_yukle()
+                self.logger.info("🔍 Stok kontrol ediliyor...")
+                self._tum_urunleri_kontrol_et()
                 self._durum_kaydet()
                 self.logger.info("✅ Tek seferlik kontrol tamamlandı.")
                 return
 
             # Sürekli takip — her zamanki gibi
-            self.logger.info("🔍 İlk kontrol yapılıyor (mevcut durumlar kaydediliyor)...")
-            self._tum_urunleri_kontrol_et(ilk_kontrol=True)
+            self.logger.info("🔍 İlk kontrol yapılıyor...")
+            self._tum_urunleri_kontrol_et()
 
             self.logger.info("─" * 55)
             self.logger.info("🔄 Sürekli takip başladı. Durdurmak için Ctrl+C")
@@ -184,7 +178,7 @@ class StokTakipMotoru:
                         )
                         self.calisiyor = False
                         break
-                    self._tum_urunleri_kontrol_et(ilk_kontrol=False)
+                    self._tum_urunleri_kontrol_et()
                 except KeyboardInterrupt:
                     break
         finally:
@@ -192,7 +186,7 @@ class StokTakipMotoru:
 
         self.logger.info("\n👋 Stok takip sistemi durduruldu.")
 
-    def _tum_urunleri_kontrol_et(self, ilk_kontrol: bool = False):
+    def _tum_urunleri_kontrol_et(self):
         """Tüm ürünlerin stok durumunu kontrol eder."""
         zaman = datetime.now().strftime("%H:%M:%S")
         self.logger.info(f"\n🕐 [{zaman}] Kontrol başlıyor...")
@@ -231,7 +225,9 @@ class StokTakipMotoru:
                 )
 
                 # STOK DEĞİŞİKLİĞİ TESPİTİ
-                if not ilk_kontrol and not onceki and durum.stokta_var:
+                # Bildirim gönder: ürün önceden stok dışıydı (veya ilk kez görülüyor)
+                # ve şu an stokta — ilk çalıştırma veya önbellek sıfırlama durumunda da bildirim gönderir
+                if not onceki and durum.stokta_var:
                     self.logger.info(
                         f"  🎉🎉🎉 {isim} [{hedef_beden}] STOĞA GİRDİ! "
                         f"Bildirim gönderiliyor..."
