@@ -44,18 +44,18 @@ class BildirimGonderici:
             fiyat: Ürünün fiyatı (varsa)
         """
         zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
-        fiyat_bilgisi = f" | Fiyat: {fiyat}" if fiyat else ""
+        fiyat_satiri = f"💰 Fiyat: {fiyat}\n" if fiyat else ""
 
         baslik = f"🎉 STOK BİLDİRİMİ: {urun_ismi}"
         mesaj = (
             f"Ürün stoğa girdi!\n\n"
             f"📦 Ürün: {urun_ismi}\n"
-            f"💰 {fiyat_bilgisi}\n"
+            f"{fiyat_satiri}"
             f"🔗 Link: {url}\n"
             f"⏰ Zaman: {zaman}"
         )
 
-        logger.info(f"🎉 {urun_ismi} STOĞA GİRDİ! {fiyat_bilgisi}")
+        logger.info(f"🎉 {urun_ismi} STOĞA GİRDİ! {'| Fiyat: ' + fiyat if fiyat else ''}")
 
         if MASAUSTU_BILDIRIM:
             self._masaustu_bildirim(baslik, mesaj, url)
