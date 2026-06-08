@@ -35,17 +35,6 @@ _env_dosyasi_yukle()
 
 # Takip edilecek ürünler
 # Her ürün için URL, isim ve hedef beden belirtin
-# Massimo Dutti ürünleri (geçici olarak pasif):
-# {
-#     "isim": "Yüksek Bel Geniş Paça Jean",
-#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
-#     "hedef_beden": "XS",
-# },
-# {
-#     "isim": "Yüksek Bel Geniş Paça Jean",
-#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
-#     "hedef_beden": "S",
-# },
 URUNLER = [
     {
         "isim": "Patchwork Mini Bucket Bag With Rigid Handles",
@@ -62,6 +51,11 @@ URUNLER = [
         "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
         "hedef_beden": "XS",
     },
+    {
+        "isim": "High Heel Ballerinas (Siyah)",
+        "url": "https://www.massimodutti.com/tr/highheel-ballerinas-l11433750?pelement=61729602&colorId=800&style=0",
+        "hedef_beden": "39",
+    },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
@@ -69,7 +63,7 @@ URUNLER = [
 KONTROL_ARALIGI = 5 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
-TAKIP_BITIS_TARIHI = "2026-05-20 23:59:59"
+TAKIP_BITIS_TARIHI = "2026-06-25 23:59:59"
 
 # ============================================================
 # BİLDİRİM AYARLARI
