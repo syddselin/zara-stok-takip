@@ -62,6 +62,16 @@ URUNLER = [
         "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
         "hedef_beden": "XS",
     },
+    {
+        "isim": "Wedge-Heeled Sandals",
+        "url": "https://www.zara.com/tr/en/wedge-heeled-sandals-p12341710.html?v1=545479217",
+        "hedef_beden": "39",
+    },
+    {
+        "isim": "Wedge-Heeled Sandals",
+        "url": "https://www.zara.com/tr/en/wedge-heeled-sandals-p12341710.html?v1=545479217",
+        "hedef_beden": "40",
+    },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
