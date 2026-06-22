@@ -97,6 +97,16 @@ URUNLER = [
         "url": "https://www.zara.com/tr/tr/basic-poplin-gomlek-p00387060.html?v1=551481783",
         "hedef_beden": "M",
     },
+    {
+        "isim": "Bağcıklı Dekolteli Top",
+        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Bağcıklı Dekolteli Top",
+        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
+        "hedef_beden": "M",
+    },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
