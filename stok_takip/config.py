@@ -34,32 +34,60 @@ def _env_dosyasi_yukle():
 _env_dosyasi_yukle()
 
 # Takip edilecek ürünler
-# Her ürün için URL, isim ve hedef beden belirtin
 URUNLER = [
     {
-        "isim": "Patchwork Mini Bucket Bag With Rigid Handles",
-        "url": "https://www.zara.com/tr/en/patchwork-mini-bucket-bag-with-rigid-handles-p16615610.html?v1=508015207",
-        "hedef_beden": "STANDART",
-    },
-    {
-        "isim": "Flared Trench Midi Dress",
-        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
+        "isim": "İşlemeli Pullu Şort Etek",
+        "url": "https://www.zara.com/tr/tr/islemeli-pullu-sort-etek-p03666094.html?v1=512893564",
         "hedef_beden": "S",
     },
     {
-        "isim": "Flared Trench Midi Dress",
-        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
+        "isim": "Peplum Pensli Üst",
+        "url": "https://www.zara.com/tr/tr/peplum-pensli-ust-p02610769.html?v1=515228351",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Oversize Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Oversize Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Dantel Detaylı Saten Şort",
+        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
         "hedef_beden": "XS",
     },
     {
-        "isim": "High Heel Ballerinas (Siyah)",
-        "url": "https://www.massimodutti.com/tr/highheel-ballerinas-l11433750?pelement=61729602&colorId=800&style=0",
-        "hedef_beden": "39",
+        "isim": "Dantel Detaylı Saten Şort",
+        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Mini Çizgili Triko Elbise",
+        "url": "https://www.zara.com/tr/tr/mini-cizgili-triko-elbise-p02142175.html?v1=526130439",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Basic Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/basic-poplin-gomlek-p00387060.html?v1=551481783",
+        "hedef_beden": "M",
     },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
-# Token/limit dostu kullanım için 5 dakikada bir kontrol
 KONTROL_ARALIGI = 5 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
@@ -69,26 +97,20 @@ TAKIP_BITIS_TARIHI = "2026-06-25 23:59:59"
 # BİLDİRİM AYARLARI
 # ============================================================
 
-# GitHub Actions'da çalışıyorsak masaüstü/ses bildirimi kapansın
 GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
-# Masaüstü bildirimi (macOS/Windows/Linux) — CI'da otomatik kapalı
 MASAUSTU_BILDIRIM = not GITHUB_ACTIONS
-
-# Sesli bildirim — CI'da otomatik kapalı
 SESLI_BILDIRIM = not GITHUB_ACTIONS
 
-# E-posta bildirimi
 EPOSTA_BILDIRIM = False
 EPOSTA_AYARLARI = {
     "smtp_sunucu": "smtp.gmail.com",
     "smtp_port": 587,
     "gonderen_eposta": "sizin_emailiniz@gmail.com",
-    "gonderen_sifre": "uygulama_sifresi",  # Gmail → Uygulama Şifreleri
+    "gonderen_sifre": "uygulama_sifresi",
     "alici_eposta": "bildirim_alacak@gmail.com",
 }
 
-# Telegram bildirimi — env variable varsa otomatik aktif
 TELEGRAM_BILDIRIM = bool(os.getenv("TELEGRAM_BOT_TOKEN"))
 TELEGRAM_AYARLARI = {
     "bot_token": os.getenv("TELEGRAM_BOT_TOKEN", "BOT_TOKEN_BURAYA"),
@@ -99,11 +121,6 @@ TELEGRAM_AYARLARI = {
 # İSTEK AYARLARI
 # ============================================================
 
-# Hata durumunda tekrar deneme sayısı
 TEKRAR_DENEME = 3
-
-# Log dosyası
 LOG_DOSYASI = "stok_takip.log"
-
-# Durum dosyası (çalıştırmalar arası stok durumunu saklar)
 DURUM_DOSYASI = "stok_durum.json"
