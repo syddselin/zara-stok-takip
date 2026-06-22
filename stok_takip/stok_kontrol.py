@@ -129,7 +129,6 @@ class ZaraStokKontrol:
         if not colors:
             return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Ürün renk/varyant bilgisi bulunamadı")
 
-        # hedef renkteki bedenleri tara
         hedef_renk = None
         for color in colors:
             if str(color.get("productId")) == str(product_id):
@@ -180,7 +179,6 @@ class ZaraStokKontrol:
 
 # ================================================================
 # MASSIMO DUTTI STOK KONTROL
-# (unchanged)
 # ================================================================
 
 
@@ -239,20 +237,33 @@ class MassimoDuttiStokKontrol:
 
     def _api_kontrol(self, url: str, hedef_beden: str) -> StokDurumu:
         part_number = self._product_id_cek(url)
-        product_url = self.PRODUCT_TEMPLATE.format(store_id=self.STORE_ID, catalog_id=self.CATALOG_ID, part_number=part_number)
+        params = parse_qs(urlparse(url).query)
+        color_id = params.get("colorId", [None])[0]
+
+        product_url = self.PRODUCT_TEMPLATE.format(
+            store_id=self.STORE_ID, catalog_id=self.CATALOG_ID, part_number=part_number
+        )
         product_resp = self.session.get(product_url, timeout=15)
         product_resp.raise_for_status()
         product_data = product_resp.json()
         product_id = product_data.get("id")
         stock_data = None
         if product_id:
-            stock_url = self.STOCK_TEMPLATE.format(store_id=self.STORE_ID, catalog_id=self.CATALOG_ID, product_id=product_id)
+            stock_url = self.STOCK_TEMPLATE.format(
+                store_id=self.STORE_ID, catalog_id=self.CATALOG_ID, product_id=product_id
+            )
             stock_resp = self.session.get(stock_url, timeout=15)
             stock_resp.raise_for_status()
             stock_data = stock_resp.json()
-        return self._veriyi_isle(product_data, stock_data, hedef_beden)
+        return self._veriyi_isle(product_data, stock_data, hedef_beden, color_id)
 
-    def _veriyi_isle(self, product_data: dict, stock_data: Optional[dict], hedef_beden: str) -> StokDurumu:
+    def _veriyi_isle(
+        self,
+        product_data: dict,
+        stock_data: Optional[dict],
+        hedef_beden: str,
+        color_id: Optional[str] = None,
+    ) -> StokDurumu:
         tum_bedenler = {}
         fiyat = None
         hedef_bulundu = False
@@ -268,8 +279,20 @@ class MassimoDuttiStokKontrol:
         detail = product_data.get("detail", {})
         colors = detail.get("colors", [])
         if not colors:
-            return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Renk/beden bilgisi alınamadı — API yapısı beklenmedik")
-        sizes = colors[0].get("sizes", [])
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                mesaj="Renk/beden bilgisi alınamadı — API yapısı beklenmedik",
+            )
+
+        # colorId ile doğru rengi seç; eşleşme yoksa ilk rengi kullan
+        target_color = colors[0]
+        if color_id:
+            matched = [c for c in colors if str(c.get("id", "")) == str(color_id)]
+            if matched:
+                target_color = matched[0]
+
+        sizes = target_color.get("sizes", [])
         logger.info(f"  📏 {len(sizes)} beden bulundu")
         for size in sizes:
             beden = (size.get("name") or "").strip().upper()
@@ -295,11 +318,31 @@ class MassimoDuttiStokKontrol:
                 hedef_stokta = stokta
         if not hedef_bulundu:
             mevcut = ", ".join(tum_bedenler.keys()) or "Beden bilgisi alınamadı"
-            return StokDurumu(stokta_var=False, beden=hedef_beden, fiyat=fiyat, tum_bedenler=tum_bedenler, mesaj=f"'{hedef_beden}' bedeni bulunamadı. Mevcut: {mevcut}")
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                fiyat=fiyat,
+                tum_bedenler=tum_bedenler,
+                mesaj=f"'{hedef_beden}' bedeni bulunamadı. Mevcut: {mevcut}",
+            )
         stokta_bedenler = [b for b, s in tum_bedenler.items() if s]
-        diger_bilgi = (f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}" if stokta_bedenler else "Hiçbir beden stokta değil")
-        mesaj = f"{hedef_beden} bedeni STOKTA! {diger_bilgi}" if hedef_stokta else f"{hedef_beden} bedeni stok dışı. {diger_bilgi}"
-        return StokDurumu(stokta_var=hedef_stokta, beden=hedef_beden, fiyat=fiyat, tum_bedenler=tum_bedenler, mesaj=mesaj)
+        diger_bilgi = (
+            f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}"
+            if stokta_bedenler
+            else "Hiçbir beden stokta değil"
+        )
+        mesaj = (
+            f"{hedef_beden} bedeni STOKTA! {diger_bilgi}"
+            if hedef_stokta
+            else f"{hedef_beden} bedeni stok dışı. {diger_bilgi}"
+        )
+        return StokDurumu(
+            stokta_var=hedef_stokta,
+            beden=hedef_beden,
+            fiyat=fiyat,
+            tum_bedenler=tum_bedenler,
+            mesaj=mesaj,
+        )
 
 
 # ================================================================
