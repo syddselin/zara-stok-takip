@@ -107,6 +107,31 @@ URUNLER = [
         "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
         "hedef_beden": "M",
     },
+    {
+        "isim": "Kısa Kollu Düğmeli Top (v2)",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top (v2)",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Pilili Dokumlu Pantolon",
+        "url": "https://www.zara.com/tr/tr/pilili-dokumlu-pantolon-p03152410.html?v1=535973339",
+        "hedef_beden": "XS",
+    },
+    {
+        "isim": "Süslü Düğmeli Dokumlu Bluz ZW Collection",
+        "url": "https://www.zara.com/tr/tr/suslu-dugmeli-dokumlu-bluz-zw-collection-p00340004.html?v1=535481971",
+        "hedef_beden": "XS",
+    },
+    {
+        "isim": "Çizgili Geniş Paça Pantolon",
+        "url": "https://www.zara.com/tr/tr/cizgili-genis-paca-pantolon-p02785512.html?v1=527054741",
+        "hedef_beden": "S",
+    },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
