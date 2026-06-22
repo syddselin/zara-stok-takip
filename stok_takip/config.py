@@ -48,19 +48,54 @@ _env_dosyasi_yukle()
 # },
 URUNLER = [
     {
-        "isim": "Patchwork Mini Bucket Bag With Rigid Handles",
-        "url": "https://www.zara.com/tr/en/patchwork-mini-bucket-bag-with-rigid-handles-p16615610.html?v1=508015207",
-        "hedef_beden": "STANDART",
-    },
-    {
-        "isim": "Flared Trench Midi Dress",
-        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
+        "isim": "İşlemeli Pullu Şort Etek",
+        "url": "https://www.zara.com/tr/tr/islemeli-pullu-sort-etek-p03666094.html?v1=512893564",
         "hedef_beden": "S",
     },
     {
-        "isim": "Flared Trench Midi Dress",
-        "url": "https://www.zara.com/tr/en/flared-trench-midi-dress-p03152334.html?v1=523090976",
+        "isim": "Peplum Pensli Üst",
+        "url": "https://www.zara.com/tr/tr/peplum-pensli-ust-p02610769.html?v1=515228351",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Oversize Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Oversize Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Dantel Detaylı Saten Şort",
+        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
         "hedef_beden": "XS",
+    },
+    {
+        "isim": "Dantel Detaylı Saten Şort",
+        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Mini Çizgili Triko Elbise",
+        "url": "https://www.zara.com/tr/tr/mini-cizgili-triko-elbise-p02142175.html?v1=526130439",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Basic Poplin Gömlek",
+        "url": "https://www.zara.com/tr/tr/basic-poplin-gomlek-p00387060.html?v1=551481783",
+        "hedef_beden": "M",
     },
 ]
 
@@ -69,7 +104,8 @@ URUNLER = [
 KONTROL_ARALIGI = 5 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
-TAKIP_BITIS_TARIHI = "2026-05-20 23:59:59"
+# Eski tarih geçerse uygulama kontrolü hiç başlatmaz; gelecekte kalmalı.
+TAKIP_BITIS_TARIHI = "2026-07-15 23:59:59"
 
 # ============================================================
 # BİLDİRİM AYARLARI
@@ -94,11 +130,17 @@ EPOSTA_AYARLARI = {
     "alici_eposta": "bildirim_alacak@gmail.com",
 }
 
-# Telegram bildirimi — env variable varsa otomatik aktif
-TELEGRAM_BILDIRIM = bool(os.getenv("TELEGRAM_BOT_TOKEN"))
+# Telegram bildirimi — env variable varsa ve chat_id tanımlıysa otomatik aktif
+_TELEGRAM_BOT = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+_TELEGRAM_CHAT = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+
+# Sadece hem token hem chat_id sağlanmışsa bildirimi etkinleştir
+TELEGRAM_BILDIRIM = bool(
+    _TELEGRAM_BOT and _TELEGRAM_CHAT and _TELEGRAM_BOT != "BOT_TOKEN_BURAYA" and _TELEGRAM_CHAT != "CHAT_ID_BURAYA"
+)
 TELEGRAM_AYARLARI = {
-    "bot_token": os.getenv("TELEGRAM_BOT_TOKEN", "BOT_TOKEN_BURAYA"),
-    "chat_id": os.getenv("TELEGRAM_CHAT_ID", "CHAT_ID_BURAYA"),
+    "bot_token": _TELEGRAM_BOT or "BOT_TOKEN_BURAYA",
+    "chat_id": _TELEGRAM_CHAT or "CHAT_ID_BURAYA",
 }
 
 # ============================================================

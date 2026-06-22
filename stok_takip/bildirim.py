@@ -198,23 +198,36 @@ class BildirimGonderici:
                 f"{mesaj}\n\n"
                 f"[🛒 Ürüne Git]({url})"
             )
+            bot = TELEGRAM_AYARLARI.get("bot_token")
+            chat = TELEGRAM_AYARLARI.get("chat_id")
 
-            api_url = (
-                f"https://api.telegram.org/bot{TELEGRAM_AYARLARI['bot_token']}"
-                f"/sendMessage"
-            )
+            if not bot or not chat or bot in ("BOT_TOKEN_BURAYA", "") or chat in ("CHAT_ID_BURAYA", ""):
+                logger.error(
+                    "❌ Telegram yapılandırması eksik veya placeholder. `TELEGRAM_BOT_TOKEN` ve `TELEGRAM_CHAT_ID` ortam değişkenlerini kontrol edin."
+                )
+                return
+
+            api_url = f"https://api.telegram.org/bot{bot}/sendMessage"
 
             payload = {
-                "chat_id": TELEGRAM_AYARLARI["chat_id"],
+                "chat_id": chat,
                 "text": telegram_mesaj,
                 "parse_mode": "Markdown",
                 "disable_web_page_preview": False,
             }
 
             response = requests.post(api_url, json=payload, timeout=10)
-            response.raise_for_status()
 
-            logger.info("✅ Telegram bildirimi gönderildi")
+            if response.ok:
+                logger.info("✅ Telegram bildirimi gönderildi")
+            else:
+                # Telegram hatalarında response body genellikle JSON ile hata bilgisini içerir
+                try:
+                    logger.error(
+                        f"❌ Telegram gönderilemedi: HTTP {response.status_code} - {response.text}"
+                    )
+                except Exception:
+                    logger.error(f"❌ Telegram gönderilemedi: HTTP {response.status_code}")
 
         except Exception as e:
             logger.error(f"❌ Telegram bildirimi gönderilemedi: {e}")
