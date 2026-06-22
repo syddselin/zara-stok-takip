@@ -129,7 +129,6 @@ class ZaraStokKontrol:
         if not colors:
             return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Ürün renk/varyant bilgisi bulunamadı")
 
-        # hedef renkteki bedenleri tara
         hedef_renk = None
         for color in colors:
             if str(color.get("productId")) == str(product_id):
