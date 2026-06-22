@@ -43,7 +43,6 @@ def log_ayarla():
     logger = logging.getLogger("stok_takip")
     logger.setLevel(logging.INFO)
 
-    # Konsol handler
     konsol = logging.StreamHandler()
     konsol.setLevel(logging.INFO)
     konsol_format = logging.Formatter(
@@ -51,7 +50,6 @@ def log_ayarla():
     )
     konsol.setFormatter(konsol_format)
 
-    # Dosya handler - Saatte bir döndür, en fazla 6 yedek tut
     dosya = logging.handlers.TimedRotatingFileHandler(
         LOG_DOSYASI,
         when="H",
@@ -76,28 +74,17 @@ def log_ayarla():
 # STOK TAKİP MOTORU
 # ================================================================
 class StokTakipMotoru:
-    """
-    Ana stok takip döngüsü.
-    Ürünleri periyodik olarak kontrol eder ve stok değişikliğinde
-    bildirim gönderir.
-    """
-
     def __init__(self):
         self.kontrol = StokKontrol()
         self.bildirim = BildirimGonderici()
         self.logger = logging.getLogger("stok_takip")
-
-        # Her ürün+beden kombinasyonunun önceki stok durumunu sakla
         self.onceki_durumlar: dict[str, bool] = {}
         self.calisiyor = True
         self.takip_bitis_tarihi = datetime.strptime(
             TAKIP_BITIS_TARIHI, "%Y-%m-%d %H:%M:%S"
         )
 
-    # ─── Durum dosyası (çalıştırmalar arası hafıza) ───────────
-
     def _durum_yukle(self):
-        """Önceki stok durumlarını dosyadan yükler (varsa)."""
         yol = Path(DURUM_DOSYASI)
         if yol.exists():
             try:
@@ -111,7 +98,6 @@ class StokTakipMotoru:
         return False
 
     def _durum_kaydet(self):
-        """Mevcut stok durumlarını dosyaya kaydeder."""
         try:
             Path(DURUM_DOSYASI).write_text(
                 json.dumps(self.onceki_durumlar, ensure_ascii=False, indent=2),
@@ -121,20 +107,12 @@ class StokTakipMotoru:
         except Exception as e:
             self.logger.warning(f"⚠️  Durum dosyası kaydedilemedi: {e}")
 
-    # ─── Ana döngü ────────────────────────────────────────────
-
     def baslat(self, tek_seferlik: bool = False):
-        """
-        Stok takip döngüsünü başlatır.
-
-        Args:
-            tek_seferlik: True ise sadece bir kez kontrol eder
-        """
         self._banner_yazdir()
 
         if not URUNLER:
             self.logger.error(
-                "❌ Takip edilecek ürün bulunamadı! config.py dosyasını düzenleyin."
+                "❌ Takip edilecek ürün bulunamadı! config.py dosyasını düzzenleyin."
             )
             return
 
@@ -153,22 +131,14 @@ class StokTakipMotoru:
 
         try:
             if tek_seferlik:
-                # Önceki durumu dosyadan yükle (GitHub Actions hafızası)
                 onceki_var = self._durum_yukle()
-                ilk_kontrol = not onceki_var
-
-                if ilk_kontrol:
-                    self.logger.info("🔍 İlk çalıştırma — durumlar kaydediliyor...")
-                else:
-                    self.logger.info("🔍 Stok kontrol ediliyor (önceki durumla karşılaştırılacak)...")
-
-                self._tum_urunleri_kontrol_et(ilk_kontrol=ilk_kontrol)
+                self.logger.info("🔍 Stok kontrol ediliyor...")
+                self._tum_urunleri_kontrol_et(ilk_kontrol=not onceki_var)
                 self._durum_kaydet()
                 self.logger.info("✅ Tek seferlik kontrol tamamlandı.")
                 return
 
-            # Sürekli takip — her zamanki gibi
-            self.logger.info("🔍 İlk kontrol yapılıyor (mevcut durumlar kaydediliyor)...")
+            self.logger.info("🔍 İlk kontrol yapılıyor...")
             self._tum_urunleri_kontrol_et(ilk_kontrol=True)
 
             self.logger.info("─" * 55)
@@ -193,7 +163,6 @@ class StokTakipMotoru:
         self.logger.info("\n👋 Stok takip sistemi durduruldu.")
 
     def _tum_urunleri_kontrol_et(self, ilk_kontrol: bool = False):
-        """Tüm ürünlerin stok durumunu kontrol eder."""
         zaman = datetime.now().strftime("%H:%M:%S")
         self.logger.info(f"\n🕐 [{zaman}] Kontrol başlıyor...")
 
@@ -205,19 +174,13 @@ class StokTakipMotoru:
 
             try:
                 durum = self.kontrol.kontrol_et(url, hedef_beden)
-                onceki = self.onceki_durumlar.get(anahtar, False)
+                # None sentinel: bu ürünü daha önce hiç görmedik
+                onceki = self.onceki_durumlar.get(anahtar)  # None veya bool
 
-                # Durum göstergeleri
-                if durum.stokta_var:
-                    simge = "✅"
-                    durum_metin = "STOKTA"
-                else:
-                    simge = "❌"
-                    durum_metin = "STOK DIŞI"
-
+                simge = "✅" if durum.stokta_var else "❌"
+                durum_metin = "STOKTA" if durum.stokta_var else "STOK DIŞI"
                 fiyat_bilgisi = f" | 💰 {durum.fiyat}" if durum.fiyat else ""
 
-                # Tüm bedenlerin özet tablosu
                 beden_ozet = ""
                 if durum.tum_bedenler:
                     beden_ozet = " | Bedenler: " + " ".join(
@@ -230,28 +193,28 @@ class StokTakipMotoru:
                     f"{fiyat_bilgisi}{beden_ozet}"
                 )
 
-                # STOK DEĞİŞİKLİĞİ TESPİTİ
-                if not ilk_kontrol and not onceki and durum.stokta_var:
+                # Bildirim koşulu:
+                # - stokta_var=True
+                # - onceki None (hiç görülmemiş) VEYA onceki False (stok dışıydı)
+                # Yani: stokta görüldüğü anda (ilk kez veya dönüşte) hep bildir
+                if durum.stokta_var and not onceki:
                     self.logger.info(
-                        f"  🎉🎉🎉 {isim} [{hedef_beden}] STOĞA GİRDİ! "
+                        f"  🎉🎉🎉 {isim} [{hedef_beden}] STOKTA! "
                         f"Bildirim gönderiliyor..."
                     )
                     self.bildirim.bildirim_gonder(
                         f"{isim} - {hedef_beden}", url, durum.fiyat
                     )
 
-                # Durumu güncelle
                 self.onceki_durumlar[anahtar] = durum.stokta_var
 
             except Exception as e:
                 self.logger.error(f"  ⚠️  {isim}: Kontrol hatası - {e}")
 
     def durdur(self, *args):
-        """Takip döngüsünü durdurur (sinyal işleyici)."""
         self.calisiyor = False
 
     def _banner_yazdir(self):
-        """Başlangıç banner'ını yazdırır."""
         banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║              🛒  STOK TAKİP SİSTEMİ  🛒                    ║
@@ -261,7 +224,6 @@ class StokTakipMotoru:
         print(banner)
 
     def _takip_suresi_bitti(self) -> bool:
-        """Yapılandırılan bitiş tarihine göre takip süresinin dolup dolmadığını döndürür."""
         return datetime.now() > self.takip_bitis_tarihi
 
 
@@ -282,7 +244,6 @@ def main():
     logger = log_ayarla()
     motor = StokTakipMotoru()
 
-    # Ctrl+C ile düzgün kapanma
     signal.signal(signal.SIGINT, motor.durdur)
     signal.signal(signal.SIGTERM, motor.durdur)
 
@@ -295,5 +256,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

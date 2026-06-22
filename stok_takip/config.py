@@ -85,13 +85,48 @@ URUNLER = [
         "url": "https://www.zara.com/tr/tr/basic-poplin-gomlek-p00387060.html?v1=551481783",
         "hedef_beden": "M",
     },
+    {
+        "isim": "Bağcıklı Dekolteli Top",
+        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Bağcıklı Dekolteli Top",
+        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top (v2)",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Kısa Kollu Düğmeli Top (v2)",
+        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
+        "hedef_beden": "M",
+    },
+    {
+        "isim": "Pilili Dokumlu Pantolon",
+        "url": "https://www.zara.com/tr/tr/pilili-dokumlu-pantolon-p03152410.html?v1=535973339",
+        "hedef_beden": "XS",
+    },
+    {
+        "isim": "Süsle Düğmeli Dokumlu Bluz ZW Collection",
+        "url": "https://www.zara.com/tr/tr/suslu-dugmeli-dokumlu-bluz-zw-collection-p00340004.html?v1=535481971",
+        "hedef_beden": "XS",
+    },
+    {
+        "isim": "Çizgili Geniş Paça Pantolon",
+        "url": "https://www.zara.com/tr/tr/cizgili-genis-paca-pantolon-p02785512.html?v1=527054741",
+        "hedef_beden": "S",
+    },
 ]
 
 # Kontrol aralığı (saniye cinsinden)
 KONTROL_ARALIGI = 5 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
-TAKIP_BITIS_TARIHI = "2026-06-25 23:59:59"
+TAKIP_BITIS_TARIHI = "2026-07-15 23:59:59"
 
 # ============================================================
 # BİLDİRİM AYARLARI
@@ -111,10 +146,18 @@ EPOSTA_AYARLARI = {
     "alici_eposta": "bildirim_alacak@gmail.com",
 }
 
-TELEGRAM_BILDIRIM = bool(os.getenv("TELEGRAM_BOT_TOKEN"))
+_TELEGRAM_BOT = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+_TELEGRAM_CHAT = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+
+TELEGRAM_BILDIRIM = bool(
+    _TELEGRAM_BOT
+    and _TELEGRAM_CHAT
+    and _TELEGRAM_BOT != "BOT_TOKEN_BURAYA"
+    and _TELEGRAM_CHAT != "CHAT_ID_BURAYA"
+)
 TELEGRAM_AYARLARI = {
-    "bot_token": os.getenv("TELEGRAM_BOT_TOKEN", "BOT_TOKEN_BURAYA"),
-    "chat_id": os.getenv("TELEGRAM_CHAT_ID", "CHAT_ID_BURAYA"),
+    "bot_token": _TELEGRAM_BOT or "BOT_TOKEN_BURAYA",
+    "chat_id": _TELEGRAM_CHAT or "CHAT_ID_BURAYA",
 }
 
 # ============================================================
