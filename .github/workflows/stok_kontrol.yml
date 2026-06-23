@@ -2,16 +2,15 @@ name: 🛒 Zara Stok Kontrol
 
 on:
   schedule:
-    # GEÇİCİ: Repo public yapılana kadar bütçeyi korumak için tek kontrol.
-    # GitHub */5 cron'unu throttle ettiği için bu pratikte ~saatte bir çalışır (~ucuz).
-    # Repo public olunca buraya iç döngü eklenip gerçek 5 dk kapsama sağlanacak.
-    - cron: "*/5 * * * *"
+    # 30 dk'da bir tetiklenir; her çalışmada 6×5dk döngüsüyle 30 dk pencere kesintisiz kapsar.
+    # Public repo → Actions dakikaları ücretsiz, sleep maliyeti yok.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
   stok-kontrol:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: 📥 Kodu çek
@@ -42,4 +41,10 @@ jobs:
           GITHUB_ACTIONS: "true"
         working-directory: stok_takip
         run: |
-          python main.py --tek-seferlik
+          for i in 1 2 3 4 5 6; do
+            echo "▶️ Kontrol $i/6 — $(date '+%H:%M')"
+            python main.py --tek-seferlik
+            if [ "$i" -lt 6 ]; then
+              sleep 300
+            fi
+          done
