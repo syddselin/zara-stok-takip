@@ -27,9 +27,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: stok_takip/stok_durum.json
-          key: stok-durum-${{ github.run_id }}
+          key: stok-durum-v2-${{ github.run_id }}
           restore-keys: |
-            stok-durum-
+            stok-durum-v2-
 
       - name: 🔍 Stok kontrol et
         env:
