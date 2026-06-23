@@ -2,12 +2,15 @@ name: 🛒 Zara Stok Kontrol
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # GitHub kısa aralıklı cron'ları (örn. */5) yoğunlukta atlıyor; bu yüzden
+    # 30 dk'da bir tetikleyip her çalışmada iç döngüyle 5 dk arayla 3 kontrol yapıyoruz.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
   stok-kontrol:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: 📥 Kodu çek
@@ -38,4 +41,13 @@ jobs:
           GITHUB_ACTIONS: "true"
         working-directory: stok_takip
         run: |
-          python main.py --tek-seferlik
+          # Tek tetiklemede 5 dk arayla 3 kontrol -> her çalışma ~10-15 dk kapsar.
+          # Durum dosyası iş boyunca diskte kalır, böylece kontroller arası geçişler de yakalanır.
+          for i in 1 2 3; do
+            echo "▶️ Kontrol turu $i/3"
+            python main.py --tek-seferlik
+            if [ "$i" -lt 3 ]; then
+              echo "⏳ 5 dakika bekleniyor..."
+              sleep 300
+            fi
+          done
