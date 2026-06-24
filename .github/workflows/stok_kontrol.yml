@@ -4,14 +4,14 @@ on:
   schedule:
     # Normal: 30 dk'da bir, her çalışmada 6×5dk döngüsü
     - cron: "*/30 * * * *"
-    # Özel: 24 Haziran 19:30 TRK (=16:30 UTC) — 30×1dk yoğun kontrol
-    - cron: "30 16 24 6 *"
+    # Özel: 24 Haziran 20:00 TRK (=17:00 UTC) — 60×1dk yoğun kontrol
+    - cron: "0 17 24 6 *"
   workflow_dispatch:
 
 jobs:
   stok-kontrol:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 70
 
     steps:
       - name: 📥 Kodu çek
@@ -42,12 +42,12 @@ jobs:
           GITHUB_ACTIONS: "true"
         working-directory: stok_takip
         run: |
-          # 16:30 UTC = 19:30 TRK → 30 tur × 1dk; normal → 6 tur × 5dk
+          # 17:00 UTC = 20:00 TRK → 60 tur × 1dk; normal → 6 tur × 5dk
           HOUR_UTC=$(date -u +%H)
           MIN_UTC=$(date -u +%M)
-          if [ "$HOUR_UTC" = "16" ] && [ "$MIN_UTC" -ge "29" ] && [ "$MIN_UTC" -le "35" ]; then
-            ROUNDS=30; SLEEP=60
-            echo "🔥 Yoğun mod: ${ROUNDS} tur × ${SLEEP}s (19:30 TRK penceresi)"
+          if [ "$HOUR_UTC" = "17" ] && [ "$MIN_UTC" -le "5" ]; then
+            ROUNDS=60; SLEEP=60
+            echo "🔥 Yoğun mod: ${ROUNDS} tur × ${SLEEP}s (20:00 TRK penceresi)"
           else
             ROUNDS=6; SLEEP=300
           fi
