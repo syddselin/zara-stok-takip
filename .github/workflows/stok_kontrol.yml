@@ -2,15 +2,16 @@ name: 🛒 Zara Stok Kontrol
 
 on:
   schedule:
-    # 30 dk'da bir tetiklenir; her çalışmada 6×5dk döngüsüyle 30 dk pencere kesintisiz kapsar.
-    # Public repo → Actions dakikaları ücretsiz, sleep maliyeti yok.
+    # Normal: 30 dk'da bir, her çalışmada 6×5dk döngüsü
     - cron: "*/30 * * * *"
+    # Özel: 24 Haziran 19:30 TRK (=16:30 UTC) — 30×1dk yoğun kontrol
+    - cron: "30 16 24 6 *"
   workflow_dispatch:
 
 jobs:
   stok-kontrol:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: 📥 Kodu çek
@@ -41,10 +42,19 @@ jobs:
           GITHUB_ACTIONS: "true"
         working-directory: stok_takip
         run: |
-          for i in 1 2 3 4 5 6; do
-            echo "▶️ Kontrol $i/6 — $(date '+%H:%M')"
+          # 16:30 UTC = 19:30 TRK → 30 tur × 1dk; normal → 6 tur × 5dk
+          HOUR_UTC=$(date -u +%H)
+          MIN_UTC=$(date -u +%M)
+          if [ "$HOUR_UTC" = "16" ] && [ "$MIN_UTC" -ge "29" ] && [ "$MIN_UTC" -le "35" ]; then
+            ROUNDS=30; SLEEP=60
+            echo "🔥 Yoğun mod: ${ROUNDS} tur × ${SLEEP}s (19:30 TRK penceresi)"
+          else
+            ROUNDS=6; SLEEP=300
+          fi
+          for i in $(seq 1 $ROUNDS); do
+            echo "▶️ Kontrol $i/$ROUNDS — $(date '+%H:%M')"
             python main.py --tek-seferlik
-            if [ "$i" -lt 6 ]; then
-              sleep 300
+            if [ "$i" -lt "$ROUNDS" ]; then
+              sleep $SLEEP
             fi
           done
