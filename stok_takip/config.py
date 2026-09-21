@@ -54,8 +54,8 @@ URUNLER = [
 ]
 
 # Kontrol aralığı (saniye cinsinden)
-# Token/limit dostu kullanım için 5 dakikada bir kontrol
-KONTROL_ARALIGI = 5 * 60
+# 4 dakikada bir kontrol
+KONTROL_ARALIGI = 4 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
 # Eski tarih geçerse uygulama kontrolü hiç başlatmaz; gelecekte kalmalı.

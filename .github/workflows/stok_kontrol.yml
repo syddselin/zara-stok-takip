@@ -2,7 +2,7 @@ name: 🛒 Zara Stok Kontrol
 
 on:
   schedule:
-    # Normal: 30 dk'da bir, her çalışmada 6×5dk döngüsü
+    # Normal: 30 dk'da bir, her çalışmada 8×4dk döngüsü
     - cron: "*/30 * * * *"
     # Özel: 24 Haziran 20:00 TRK (=17:00 UTC) — 60×1dk yoğun kontrol
     - cron: "0 17 24 6 *"
@@ -42,14 +42,14 @@ jobs:
           GITHUB_ACTIONS: "true"
         working-directory: stok_takip
         run: |
-          # 17:00 UTC = 20:00 TRK → 60 tur × 1dk; normal → 6 tur × 5dk
+          # 17:00 UTC = 20:00 TRK → 60 tur × 1dk; normal → 8 tur × 4dk
           HOUR_UTC=$(date -u +%H)
           MIN_UTC=$(date -u +%M)
           if [ "$HOUR_UTC" = "17" ] && [ "$MIN_UTC" -le "5" ]; then
             ROUNDS=60; SLEEP=60
             echo "🔥 Yoğun mod: ${ROUNDS} tur × ${SLEEP}s (20:00 TRK penceresi)"
           else
-            ROUNDS=6; SLEEP=300
+            ROUNDS=8; SLEEP=240
           fi
           for i in $(seq 1 $ROUNDS); do
             # Sessiz saatler: 01:00–05:00 (TRK) arası kontrol yapılmaz
