@@ -52,6 +52,12 @@ jobs:
             ROUNDS=6; SLEEP=300
           fi
           for i in $(seq 1 $ROUNDS); do
+            # Sessiz saatler: 01:00–05:00 (TRK) arası kontrol yapılmaz
+            HOUR_TRK=$(TZ=Europe/Istanbul date +%-H)
+            if [ "$HOUR_TRK" -ge 1 ] && [ "$HOUR_TRK" -lt 5 ]; then
+              echo "🌙 Sessiz saat (${HOUR_TRK}:xx TRK) — kontrol atlandı"
+              break
+            fi
             echo "▶️ Kontrol $i/$ROUNDS — $(date '+%H:%M')"
             python main.py --tek-seferlik
             if [ "$i" -lt "$ROUNDS" ]; then
