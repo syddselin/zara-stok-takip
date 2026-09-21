@@ -7,6 +7,7 @@ Selenium veya Chrome gerektirmez — sadece HTTP istekleri kullanır.
 Desteklenen markalar:
   - Zara      → https://www.zara.com/tr/tr/products-details?productIds={id}&ajax=true
   - Massimo Dutti → https://www.massimodutti.com/itxrest/2/catalog/store/{storeId}/product/{productId}/detail
+    - Mango      → https://shop.mango.com/services/garments/{id}
 
 Kullanım:
   kontrol = StokKontrol()
@@ -346,6 +347,140 @@ class MassimoDuttiStokKontrol:
 
 
 # ================================================================
+# MANGO STOK KONTROL
+# ================================================================
+
+
+class MangoStokKontrol:
+    API_URL = "https://shop.mango.com/services/garments/{product_id}"
+
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://shop.mango.com/tr/tr/",
+    }
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update(self.HEADERS)
+
+    def kapat(self):
+        self.session.close()
+
+    def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
+        hedef_beden = hedef_beden.strip().upper()
+        for deneme in range(TEKRAR_DENEME):
+            try:
+                return self._api_kontrol(url, hedef_beden)
+            except Exception as e:
+                logger.warning(f"Mango kontrol hatası (deneme {deneme + 1}/{TEKRAR_DENEME}): {e}")
+                if deneme < TEKRAR_DENEME - 1:
+                    time.sleep(3)
+        return StokDurumu(stokta_var=False, beden=hedef_beden, mesaj="Tüm denemeler başarısız oldu")
+
+    def _api_kontrol(self, url: str, hedef_beden: str) -> StokDurumu:
+        # services/garments API'si bot korumasında (403); ürün sayfasının
+        # sunucu tarafında üretilen HTML'indeki beden düğmeleri okunur.
+        response = self.session.get(
+            url,
+            headers={"Accept": "text/html,application/xhtml+xml"},
+            timeout=20,
+        )
+        response.raise_for_status()
+        return self._sayfayi_isle(response.text, hedef_beden)
+
+    def _sayfayi_isle(self, html: str, hedef_beden: str) -> StokDurumu:
+        tum_bedenler = {}
+        for m in re.finditer(
+            r'<button[^>]*id="product\.sizeSelector\.[a-zA-Z]+\.\d+"[^>]*>(.*?)</button>',
+            html,
+            re.S,
+        ):
+            dugme = m.group(0)
+            etiket = re.search(r"<span[^>]*>\s*([^<\s][^<]*?)\s*</span>", m.group(1))
+            if not etiket:
+                continue
+            beden = etiket.group(1).strip().upper()
+            stokta = "outOfStock" not in dugme and 'aria-disabled="true"' not in dugme
+            tum_bedenler[beden] = stokta
+
+        if not tum_bedenler:
+            raise ValueError("Sayfada beden seçici bulunamadı (sayfa yapısı değişmiş veya engellenmiş olabilir)")
+
+        fiyat_m = re.search(r"([\d.]+,\d{2})\s*TL", html)
+        fiyat = f"{fiyat_m.group(1)} TL" if fiyat_m else None
+        return self._durum_olustur(tum_bedenler, fiyat, hedef_beden)
+
+    def _durum_olustur(self, tum_bedenler: dict, fiyat, hedef_beden: str) -> StokDurumu:
+        if hedef_beden not in tum_bedenler:
+            mevcut = ", ".join(tum_bedenler) or "Beden bilgisi alınamadı"
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                fiyat=fiyat,
+                tum_bedenler=tum_bedenler,
+                mesaj=f"'{hedef_beden}' bedeni bulunamadı. Mevcut: {mevcut}",
+            )
+        stokta_bedenler = [beden for beden, stokta in tum_bedenler.items() if stokta]
+        diger_bilgi = f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}" if stokta_bedenler else "Hiçbir beden stokta değil"
+        stokta = tum_bedenler[hedef_beden]
+        mesaj = f"{hedef_beden} bedeni STOKTA! {diger_bilgi}" if stokta else f"{hedef_beden} bedeni stok dışı. {diger_bilgi}"
+        return StokDurumu(stokta_var=stokta, beden=hedef_beden, fiyat=fiyat, tum_bedenler=tum_bedenler, mesaj=mesaj)
+
+    def _veriyi_isle(self, data: dict, hedef_beden: str) -> StokDurumu:
+        tum_bedenler = {}
+        fiyat = None
+
+        def tara(oge):
+            nonlocal fiyat
+            if isinstance(oge, dict):
+                if fiyat is None:
+                    fiyat_degeri = oge.get("price") or oge.get("salePrice")
+                    if fiyat_degeri is not None:
+                        fiyat = str(fiyat_degeri)
+                beden = str(oge.get("size") or oge.get("sizeName") or oge.get("label") or "").strip().upper()
+                stok_degeri = next(
+                    (oge[key] for key in ("availability", "stock", "isAvailable", "available") if key in oge),
+                    None,
+                )
+                if beden and stok_degeri is not None:
+                    if isinstance(stok_degeri, bool):
+                        stokta = stok_degeri
+                    elif isinstance(stok_degeri, (int, float)):
+                        stokta = stok_degeri > 0
+                    else:
+                        stokta = str(stok_degeri).lower() in {"in_stock", "available", "true", "1", "show", "visible"}
+                    tum_bedenler[beden] = stokta
+                for alt_oge in oge.values():
+                    tara(alt_oge)
+            elif isinstance(oge, list):
+                for alt_oge in oge:
+                    tara(alt_oge)
+
+        tara(data)
+        if hedef_beden not in tum_bedenler:
+            mevcut = ", ".join(tum_bedenler) or "Beden bilgisi alınamadı"
+            return StokDurumu(
+                stokta_var=False,
+                beden=hedef_beden,
+                fiyat=fiyat,
+                tum_bedenler=tum_bedenler,
+                mesaj=f"'{hedef_beden}' bedeni bulunamadı. Mevcut: {mevcut}",
+            )
+
+        stokta_bedenler = [beden for beden, stokta in tum_bedenler.items() if stokta]
+        diger_bilgi = f"Stokta olan diğer bedenler: {', '.join(stokta_bedenler)}" if stokta_bedenler else "Hiçbir beden stokta değil"
+        stokta = tum_bedenler[hedef_beden]
+        mesaj = f"{hedef_beden} bedeni STOKTA! {diger_bilgi}" if stokta else f"{hedef_beden} bedeni stok dışı. {diger_bilgi}"
+        return StokDurumu(stokta_var=stokta, beden=hedef_beden, fiyat=fiyat, tum_bedenler=tum_bedenler, mesaj=mesaj)
+
+
+# ================================================================
 # MARKA BAĞIMSIZ SARMALAYICI
 # ================================================================
 
@@ -356,13 +491,17 @@ class StokKontrol:
     def __init__(self):
         self._zara = ZaraStokKontrol()
         self._massimo = MassimoDuttiStokKontrol()
+        self._mango = MangoStokKontrol()
 
     def kontrol_et(self, url: str, hedef_beden: str) -> StokDurumu:
         if "massimodutti.com" in url:
             return self._massimo.kontrol_et(url, hedef_beden)
+        if "shop.mango.com" in url:
+            return self._mango.kontrol_et(url, hedef_beden)
         return self._zara.kontrol_et(url, hedef_beden)
 
     def kapat(self):
         self._zara.kapat()
         self._massimo.kapat()
+        self._mango.kapat()
         logger.info("🌐 HTTP oturumları kapatıldı")
