@@ -35,17 +35,6 @@ _env_dosyasi_yukle()
 
 # Takip edilecek ürünler
 # Her ürün için URL, isim ve hedef beden belirtin
-# Massimo Dutti ürünleri (geçici olarak pasif):
-# {
-#     "isim": "Yüksek Bel Geniş Paça Jean",
-#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
-#     "hedef_beden": "XS",
-# },
-# {
-#     "isim": "Yüksek Bel Geniş Paça Jean",
-#     "url": "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040940?pelement=56904167&banner=true",
-#     "hedef_beden": "S",
-# },
 URUNLER = [
     {
         "isim": "Kemerli Kareli Kısa Trençkot",
@@ -61,91 +50,6 @@ URUNLER = [
         "isim": "Kemerli Kareli Kısa Trençkot",
         "url": "https://shop.mango.com/tr/tr/p/kadın/ceket/kemerli-kareli-kısa-trenckot/37054100/08/00",
         "hedef_beden": "M",
-    },
-    {
-        "isim": "İşlemeli Pullu Şort Etek",
-        "url": "https://www.zara.com/tr/tr/islemeli-pullu-sort-etek-p03666094.html?v1=512893564",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Peplum Pensli Üst",
-        "url": "https://www.zara.com/tr/tr/peplum-pensli-ust-p02610769.html?v1=515228351",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Kısa Kollu Düğmeli Top",
-        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Kısa Kollu Düğmeli Top",
-        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356735",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Oversize Poplin Gömlek",
-        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Oversize Poplin Gömlek",
-        "url": "https://www.zara.com/tr/tr/oversize-poplin-gomlek-p02620695.html?v1=515236464",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Dantel Detaylı Saten Şort",
-        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
-        "hedef_beden": "XS",
-    },
-    {
-        "isim": "Dantel Detaylı Saten Şort",
-        "url": "https://www.zara.com/tr/tr/dantel-detayli-saten-sort-p01165117.html?v1=548196693",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Mini Çizgili Triko Elbise",
-        "url": "https://www.zara.com/tr/tr/mini-cizgili-triko-elbise-p02142175.html?v1=526130439",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Basic Poplin Gömlek",
-        "url": "https://www.zara.com/tr/tr/basic-poplin-gomlek-p00387060.html?v1=551481783",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Bağcıklı Dekolteli Top",
-        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Bağcıklı Dekolteli Top",
-        "url": "https://www.zara.com/tr/tr/bagcikli-dekolteli-top-p07521019.html?v1=503297735",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Kısa Kollu Düğmeli Top (v2)",
-        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
-        "hedef_beden": "S",
-    },
-    {
-        "isim": "Kısa Kollu Düğmeli Top (v2)",
-        "url": "https://www.zara.com/tr/tr/kisa-kollu-dugmeli-top-p02162272.html?v1=547356736",
-        "hedef_beden": "M",
-    },
-    {
-        "isim": "Pilili Dokumlu Pantolon",
-        "url": "https://www.zara.com/tr/tr/pilili-dokumlu-pantolon-p03152410.html?v1=535973339",
-        "hedef_beden": "XS",
-    },
-    {
-        "isim": "Süslü Düğmeli Dokumlu Bluz ZW Collection",
-        "url": "https://www.zara.com/tr/tr/suslu-dugmeli-dokumlu-bluz-zw-collection-p00340004.html?v1=535481971",
-        "hedef_beden": "XS",
-    },
-    {
-        "isim": "Çizgili Geniş Paça Pantolon",
-        "url": "https://www.zara.com/tr/tr/cizgili-genis-paca-pantolon-p02785512.html?v1=527054741",
-        "hedef_beden": "S",
     },
 ]
 
