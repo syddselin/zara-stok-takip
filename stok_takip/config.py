@@ -48,6 +48,21 @@ _env_dosyasi_yukle()
 # },
 URUNLER = [
     {
+        "isim": "Kemerli Kareli Kısa Trençkot",
+        "url": "https://shop.mango.com/tr/tr/p/kadın/ceket/kemerli-kareli-kısa-trenckot/37054100/08/00",
+        "hedef_beden": "XS",
+    },
+    {
+        "isim": "Kemerli Kareli Kısa Trençkot",
+        "url": "https://shop.mango.com/tr/tr/p/kadın/ceket/kemerli-kareli-kısa-trenckot/37054100/08/00",
+        "hedef_beden": "S",
+    },
+    {
+        "isim": "Kemerli Kareli Kısa Trençkot",
+        "url": "https://shop.mango.com/tr/tr/p/kadın/ceket/kemerli-kareli-kısa-trenckot/37054100/08/00",
+        "hedef_beden": "M",
+    },
+    {
         "isim": "İşlemeli Pullu Şort Etek",
         "url": "https://www.zara.com/tr/tr/islemeli-pullu-sort-etek-p03666094.html?v1=512893564",
         "hedef_beden": "S",
@@ -140,7 +155,7 @@ KONTROL_ARALIGI = 5 * 60
 
 # Takibin otomatik duracağı tarih-saat (YYYY-MM-DD HH:MM:SS)
 # Eski tarih geçerse uygulama kontrolü hiç başlatmaz; gelecekte kalmalı.
-TAKIP_BITIS_TARIHI = "2026-07-15 23:59:59"
+TAKIP_BITIS_TARIHI = "2026-12-31 23:59:59"
 
 # ============================================================
 # BİLDİRİM AYARLARI
